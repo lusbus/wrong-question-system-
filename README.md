@@ -37,7 +37,7 @@
 
 ### 🤖 多 AI 提供商支持
 
-- DeepSeek
+- DeepSeek（推荐）
 - 阿里云（通义千问）
 - 智谱 AI
 - 百度文心
@@ -137,7 +137,7 @@ src/
 
 database/                   # 数据库初始化脚本
 docs/                       # 项目文档
-release/                    # 构建输出
+dist-release/               # 构建输出
 ```
 
 ## 数据模型
@@ -159,4 +159,3 @@ release/                    # 构建输出
 ## 许可证
 
 MIT
-
