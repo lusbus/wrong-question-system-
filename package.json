@@ -1,6 +1,6 @@
 {
   "name": "gwy-wrong-question-system",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "公务员考试错题解析与学习提升系统",
   "main": "dist/main/index.js",
   "scripts": {
