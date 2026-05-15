@@ -44,7 +44,7 @@ function createWindow(): void {
     log.info('Loading from dev server URL:', VITE_DEV_SERVER_URL)
     mainWindow.loadURL(VITE_DEV_SERVER_URL)
   } else {
-    const htmlPath = join(__dirname, '../renderer/index.html')
+    const htmlPath = join(__dirname, '../index.html')
     log.info('Loading from file:', htmlPath)
     mainWindow.loadFile(htmlPath)
   }
