@@ -1,18 +1,25 @@
-import { getDatabase } from './connection'
+import { getDatabase, saveDatabase } from './connection'
 import { WrongQuestion, QuestionStats } from '../../shared/types'
+import { createLogger, LogLevel } from '../utils/logger'
+
+const log = createLogger('QuestionRepository', LogLevel.DEBUG)
 
 export const questionRepository = {
-  create(question: Omit<WrongQuestion, 'id' | 'createdAt' | 'updatedAt'>): number {
-    const db = getDatabase()
-    const stmt = db.prepare(`
+  async create(question: Omit<WrongQuestion, 'id' | 'createdAt' | 'updatedAt'>): Promise<number> {
+    const startTime = Date.now()
+    log.info('Creating new question', { type: question.questionType, subject: question.subject })
+    
+    const db = await getDatabase()
+    
+    db.run(`
       INSERT INTO wrong_questions (
         subject, question_type, question_content, user_answer, 
         correct_answer, error_type, error_analysis, correct_solution,
-        knowledge_points, similar_questions, status, source
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-    
-    const result = stmt.run(
+        knowledge_points, similar_questions, status, source,
+        structure_analysis, error_cause_type, error_cause_detail, option_analysis,
+        avoid_pitfall_mantra, similar_question_ids, self_check_action
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
       question.subject,
       question.questionType,
       question.questionContent,
@@ -24,92 +31,150 @@ export const questionRepository = {
       JSON.stringify(question.knowledgePoints),
       JSON.stringify(question.similarQuestions),
       question.status,
-      question.source
+      question.source,
+      question.structureAnalysis || null,
+      question.errorCauseType || null,
+      question.errorCauseDetail || null,
+      question.optionAnalysis || null,
+      question.avoidPitfallMantra || null,
+      question.similarQuestionIds || null,
+      question.selfCheckAction || null
+    ])
+    
+    saveDatabase()
+    
+    const result = db.exec('SELECT last_insert_rowid() as id')
+    const id = result[0].values[0][0] as number
+    
+    log.info('Question created successfully', { id, duration: `${Date.now() - startTime}ms` })
+    return id
+  },
+
+  async findById(id: number): Promise<WrongQuestion | null> {
+    log.debug('Finding question by ID', { id })
+    const db = await getDatabase()
+    const result = db.exec('SELECT * FROM wrong_questions WHERE id = ?', [id])
+    const question = result.length > 0 ? parseQuestionRow(result[0]) : null
+    log.debug('Find by ID completed', { id, found: Boolean(question) })
+    return question
+  },
+
+  async findAll(): Promise<WrongQuestion[]> {
+    log.debug('Finding all questions')
+    const db = await getDatabase()
+    const result = db.exec('SELECT * FROM wrong_questions ORDER BY created_at DESC')
+    const questions = result.length > 0 ? result[0].values.map(parseQuestionValues) : []
+    log.debug('Find all completed', { count: questions.length })
+    return questions
+  },
+
+  async findBySubject(subject: string): Promise<WrongQuestion[]> {
+    log.debug('Finding questions by subject', { subject })
+    const db = await getDatabase()
+    const result = db.exec(
+      'SELECT * FROM wrong_questions WHERE subject = ? ORDER BY created_at DESC',
+      [subject]
+    )
+    const questions = result.length > 0 ? result[0].values.map(parseQuestionValues) : []
+    log.debug('Find by subject completed', { subject, count: questions.length })
+    return questions
+  },
+
+  async findByType(questionType: string): Promise<WrongQuestion[]> {
+    log.debug('Finding questions by type', { questionType })
+    const db = await getDatabase()
+    const result = db.exec(
+      'SELECT * FROM wrong_questions WHERE question_type = ? ORDER BY created_at DESC',
+      [questionType]
+    )
+    const questions = result.length > 0 ? result[0].values.map(parseQuestionValues) : []
+    log.debug('Find by type completed', { questionType, count: questions.length })
+    return questions
+  },
+
+  async updateStatus(id: number, status: 'pending' | 'mastered'): Promise<void> {
+    log.info('Updating question status', { id, status })
+    const db = await getDatabase()
+    db.run(
+      'UPDATE wrong_questions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [status, id]
+    )
+    saveDatabase()
+    log.info('Question status updated', { id, status })
+  },
+
+  async delete(id: number): Promise<void> {
+    log.info('Deleting question', { id })
+    const db = await getDatabase()
+    db.run('DELETE FROM wrong_questions WHERE id = ?', [id])
+    saveDatabase()
+    log.info('Question deleted', { id })
+  },
+
+  async getStats(): Promise<QuestionStats> {
+    log.debug('Getting statistics')
+    const startTime = Date.now()
+    const db = await getDatabase()
+    
+    const totalResult = db.exec('SELECT COUNT(*) FROM wrong_questions')
+    const masteredResult = db.exec("SELECT COUNT(*) FROM wrong_questions WHERE status = 'mastered'")
+    const pendingResult = db.exec("SELECT COUNT(*) FROM wrong_questions WHERE status = 'pending'")
+    
+    const byTypeResult = db.exec(
+      'SELECT question_type, COUNT(*) FROM wrong_questions GROUP BY question_type'
     )
     
-    return result.lastInsertRowid as number
-  },
-
-  findById(id: number): WrongQuestion | null {
-    const db = getDatabase()
-    const stmt = db.prepare('SELECT * FROM wrong_questions WHERE id = ?')
-    const row = stmt.get(id) as any
-    return row ? parseQuestion(row) : null
-  },
-
-  findAll(): WrongQuestion[] {
-    const db = getDatabase()
-    const rows = db.prepare('SELECT * FROM wrong_questions ORDER BY created_at DESC').all() as any[]
-    return rows.map(parseQuestion)
-  },
-
-  findBySubject(subject: string): WrongQuestion[] {
-    const db = getDatabase()
-    const rows = db.prepare(
-      'SELECT * FROM wrong_questions WHERE subject = ? ORDER BY created_at DESC'
-    ).all(subject) as any[]
-    return rows.map(parseQuestion)
-  },
-
-  findByType(questionType: string): WrongQuestion[] {
-    const db = getDatabase()
-    const rows = db.prepare(
-      'SELECT * FROM wrong_questions WHERE question_type = ? ORDER BY created_at DESC'
-    ).all(questionType) as any[]
-    return rows.map(parseQuestion)
-  },
-
-  updateStatus(id: number, status: 'pending' | 'mastered'): void {
-    const db = getDatabase()
-    db.prepare('UPDATE wrong_questions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-      .run(status, id)
-  },
-
-  delete(id: number): void {
-    const db = getDatabase()
-    db.prepare('DELETE FROM wrong_questions WHERE id = ?').run(id)
-  },
-
-  getStats(): QuestionStats {
-    const db = getDatabase()
-    const total = db.prepare('SELECT COUNT(*) as count FROM wrong_questions').get() as any
-    const mastered = db.prepare(
-      'SELECT COUNT(*) as count FROM wrong_questions WHERE status = ?'
-    ).get('mastered') as any
-    const pending = db.prepare(
-      'SELECT COUNT(*) as count FROM wrong_questions WHERE status = ?'
-    ).get('pending') as any
-
-    const byTypeRows = db.prepare(
-      'SELECT question_type, COUNT(*) as count FROM wrong_questions GROUP BY question_type'
-    ).all() as any[]
-    
     const byType: Record<string, number> = {}
-    byTypeRows.forEach(row => {
-      byType[row.question_type] = row.count
-    })
+    if (byTypeResult.length > 0) {
+      byTypeResult[0].values.forEach(([type, count]) => {
+        byType[type as string] = count as number
+      })
+    }
 
-    const weakPointsRows = db.prepare(`
-      SELECT value as point, COUNT(*) as count
+    const weakPointsResult = db.exec(`
+      SELECT value, COUNT(*) as count
       FROM wrong_questions, json_each(knowledge_points)
       GROUP BY value
       ORDER BY count DESC
       LIMIT 10
-    `).all() as any[]
+    `)
     
-    const weakPoints = weakPointsRows.map(r => r.point)
+    const weakPoints: string[] = []
+    if (weakPointsResult.length > 0) {
+      weakPointsResult[0].values.forEach(([point]) => {
+        weakPoints.push(point as string)
+      })
+    }
 
-    return {
-      total: total.count,
-      mastered: mastered.count,
-      pending: pending.count,
+    const stats = {
+      total: totalResult[0]?.values[0]?.[0] as number || 0,
+      mastered: masteredResult[0]?.values[0]?.[0] as number || 0,
+      pending: pendingResult[0]?.values[0]?.[0] as number || 0,
       byType,
       weakPoints
     }
+    
+    log.debug('Statistics retrieved', { 
+      duration: `${Date.now() - startTime}ms`,
+      total: stats.total 
+    })
+    return stats
   }
 }
 
-function parseQuestion(row: any): WrongQuestion {
+const COLUMN_NAMES = ['id', 'subject', 'question_type', 'question_content', 'user_answer', 'correct_answer', 'error_type', 'error_analysis', 'correct_solution', 'knowledge_points', 'similar_questions', 'status', 'source', 'structure_analysis', 'error_cause_type', 'error_cause_detail', 'option_analysis', 'avoid_pitfall_mantra', 'similar_question_ids', 'self_check_action', 'created_at', 'updated_at']
+
+function parseQuestionRow(row: { columns: string[]; values: any[][] }): WrongQuestion {
+  const values = row.values[0]
+  return parseQuestionValues(values)
+}
+
+function parseQuestionValues(values: any[]): WrongQuestion {
+  const row: Record<string, any> = {}
+  COLUMN_NAMES.forEach((name, i) => {
+    row[name] = values[i]
+  })
+  
   return {
     id: row.id,
     subject: row.subject,
@@ -124,6 +189,13 @@ function parseQuestion(row: any): WrongQuestion {
     similarQuestions: JSON.parse(row.similar_questions || '[]'),
     status: row.status,
     source: row.source,
+    structureAnalysis: row.structure_analysis,
+    errorCauseType: row.error_cause_type,
+    errorCauseDetail: row.error_cause_detail,
+    optionAnalysis: row.option_analysis,
+    avoidPitfallMantra: row.avoid_pitfall_mantra,
+    similarQuestionIds: row.similar_question_ids,
+    selfCheckAction: row.self_check_action,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }

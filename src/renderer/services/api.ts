@@ -43,8 +43,69 @@ export const api = {
     errorAnalysis: string
     correctSolution: string
     knowledgePoints: string[]
+    solvingTips?: string
   }> {
     return window.electronAPI.invoke('ai:analyzeError', question, userAnswer, correctAnswer, questionType)
+  },
+
+  async reanalyzeWithCorrectAnswer(
+    question: string,
+    userAnswer: string,
+    correctAnswer: string,
+    questionType: string
+  ): Promise<{
+    errorType: string
+    errorAnalysis: string
+    correctSolution: string
+    knowledgePoints: string[]
+    solvingTips?: string
+    correctionNote?: string
+  }> {
+    return window.electronAPI.invoke('ai:reanalyzeWithCorrectAnswer', question, userAnswer, correctAnswer, questionType)
+  },
+
+  async parseQuestion(content: string): Promise<{
+    questionStem: string
+    options: Record<string, string>
+    correctAnswer: string
+  }> {
+    return window.electronAPI.invoke('ai:parseQuestion', content)
+  },
+
+  async analyzeReview(
+    questionStem: string,
+    options: Record<string, string>,
+    userAnswer: string,
+    correctAnswer: string,
+    questionType: string
+  ): Promise<{
+    errorType: string
+    structureAnalysis: string
+    errorCauseType: string
+    errorCauseDetail: string
+    optionAnalysis: string
+    correctSolution: string
+    avoidPitfallMantra: string
+    selfCheckAction: string
+    knowledgePoints: string[]
+    solvingTips: string
+  }> {
+    return window.electronAPI.invoke('ai:analyzeReview', questionStem, options, userAnswer, correctAnswer, questionType)
+  },
+
+  async getReviewStats(): Promise<{
+    totalQuestions: number
+    masteredCount: number
+    byErrorCause: Record<string, number>
+    byQuestionType: Record<string, number>
+    topWeakPoints: string[]
+    mantrasCollected: number
+  }> {
+    return window.electronAPI.invoke('stats:getReviewStats')
+  },
+
+  async generateStudyAdvice(): Promise<string> {
+    return window.electronAPI.invoke('ai:generateStudyAdvice')
   },
 
   async generateSimilar(question: string, knowledgePoints: string): Promise<SimilarQuestion[]> {
@@ -53,6 +114,14 @@ export const api = {
 
   async generateAdvice(stats: { total: number; byType: Record<string, number>; weakPoints: string[] }): Promise<string> {
     return window.electronAPI.invoke('ai:generateAdvice', stats)
+  },
+
+  async saveConfig(config: any): Promise<void> {
+    return window.electronAPI.invoke('config:save', config)
+  },
+
+  async getConfig(): Promise<any> {
+    return window.electronAPI.invoke('config:get')
   },
 
   async syncMarkdown(): Promise<void> {

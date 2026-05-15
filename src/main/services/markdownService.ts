@@ -1,6 +1,9 @@
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { WrongQuestion, QuestionStats } from '../../shared/types'
+import { createLogger, LogLevel } from '../utils/logger'
+
+const log = createLogger('MarkdownService', LogLevel.DEBUG)
 
 const QUESTION_TYPES_MAP: Record<string, string[]> = {
   '行测': ['常识判断', '言语理解', '数量关系', '判断推理', '资料分析'],
@@ -21,10 +24,12 @@ export class MarkdownService {
 
   constructor(basePath: string) {
     this.basePath = basePath
+    log.info('MarkdownService initialized', { basePath })
     this.initializeDirectories()
   }
 
   initializeDirectories(): void {
+    log.debug('Creating markdown directories...')
     const dirs = [
       join(this.basePath, '总览'),
       ...Object.entries(QUESTION_TYPES_MAP).flatMap(([subject, types]) =>
@@ -32,17 +37,30 @@ export class MarkdownService {
       )
     ]
 
+    let createdCount = 0
     dirs.forEach(dir => {
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true })
+        createdCount++
       }
     })
+    
+    log.info('Directories initialized', { total: dirs.length, created: createdCount })
   }
 
   updateAllMarkdown(questions: WrongQuestion[], stats: QuestionStats): void {
+    const startTime = Date.now()
+    log.info('Updating all markdown files...', { 
+      questionCount: questions?.length || 0,
+      totalStats: stats?.total || 0
+    })
+    
     this.updateOverview(stats, questions)
     this.updateTypeNotebooks(questions)
     this.updateMindMaps(questions)
+    
+    const duration = Date.now() - startTime
+    log.info('All markdown files updated successfully', { duration: `${duration}ms` })
   }
 
   updateOverview(stats: QuestionStats, questions: WrongQuestion[]): void {
@@ -97,6 +115,9 @@ ${index}
     type: string,
     questions: WrongQuestion[]
   ): void {
+    const startTime = Date.now()
+    log.debug('Writing type notebook', { subject, type, questionCount: questions.length })
+    
     const stats = this.generateTypeStats(questions)
     const index = this.generateTypeIndex(questions)
     const details = this.generateQuestionDetails(questions)
@@ -116,6 +137,7 @@ ${details}
 
     const filePath = join(this.basePath, subject, type, '错题本.md')
     this.writeFile(filePath, content)
+    log.debug('Type notebook written', { subject, type, duration: `${Date.now() - startTime}ms` })
   }
 
   private writeMindMap(
@@ -123,6 +145,9 @@ ${details}
     type: string,
     questions: WrongQuestion[]
   ): void {
+    const startTime = Date.now()
+    log.debug('Writing mind map', { subject, type, questionCount: questions.length })
+    
     const knowledgeTree = this.buildKnowledgeTree(questions)
 
     const content = `# 🗺️ ${type} - 错题思维导图
@@ -140,6 +165,7 @@ ${this.generateKnowledgeStats(questions)}
 
     const filePath = join(this.basePath, subject, type, '📊 错题思维导图.md')
     this.writeFile(filePath, content)
+    log.debug('Mind map written', { subject, type, duration: `${Date.now() - startTime}ms` })
   }
 
   private generateOverviewMindmap(stats: QuestionStats): string {
@@ -189,34 +215,112 @@ ${this.generateKnowledgeStats(questions)}
     return questions.map(q => {
       const icon = ERROR_TYPE_ICONS[q.errorType] || '⚪'
       const status = q.status === 'mastered' ? '✅ 已掌握' : '❌ 待复习'
+      const date = q.createdAt ? new Date(q.createdAt).toLocaleDateString('zh-CN') : '未知'
       const knowledgeLinks = q.knowledgePoints.map(kp => `- [[${kp}]]`).join('\n')
-      const similar = q.similarQuestions.map(sq => 
+      const similar = q.similarQuestions.map(sq =>
         `**题目**：${sq.question}\n**答案**：${sq.answer}\n**解析**：${sq.explanation}`
       ).join('\n\n')
 
-      return `### 错题 ${q.id}
+      let md = `### 错题 ${q.id}
 
-**题目**：${q.questionContent}
-
-**我的答案**：${q.userAnswer}
-
+**日期**：${date}
+**科目**：${q.subject}
+**题型**：${q.questionType}
+**你的选择**：${q.userAnswer}
 **正确答案**：${q.correctAnswer}
-
+**题目来源**：${q.source || '未知'}
 **错误类型**：${icon} ${q.errorType}
 
-**错误分析**：
-> ${q.errorAnalysis}
+---
 
-**正确解法**：
-> ${q.correctSolution}
+`
 
-**核心知识点**：
+      if (q.structureAnalysis) {
+        md += `#### 第一步：拆结构
+
+${q.structureAnalysis}
+
+---
+
+`
+      }
+
+      if (q.errorCauseType || q.errorCauseDetail) {
+        md += `#### 第二步：分析错因
+
+**错因类型**：${q.errorCauseType || '未知'}
+
+**具体原因**：
+${q.errorCauseDetail || ''}
+
+---
+
+`
+      }
+
+      if (q.optionAnalysis) {
+        md += `#### 第三步：对比选项
+
+${q.optionAnalysis}
+
+---
+
+`
+      }
+
+      if (q.correctSolution) {
+        md += `#### 正确答案
+
+${q.correctSolution}
+
+---
+
+`
+      }
+
+      if (q.knowledgePoints && q.knowledgePoints.length > 0) {
+        md += `#### 核心知识点
+
 ${knowledgeLinks}
 
-**举一反三**：
+---
+
+`
+      }
+
+      if (q.avoidPitfallMantra) {
+        md += `#### 第四步：避坑口诀
+
+> ${q.avoidPitfallMantra}
+
+---
+
+`
+      }
+
+      if (q.selfCheckAction) {
+        md += `#### 第五步：同类题标记
+
+${q.selfCheckAction}
+
+---
+
+`
+      }
+
+      if (similar) {
+        md += `#### 举一反三
+
 ${similar}
 
-**复习状态**：${status}`
+---
+
+`
+      }
+
+      md += `**复习状态**：${status}`
+
+      return md
     }).join('\n\n---\n\n')
   }
 
@@ -292,10 +396,12 @@ ${rows.join('\n')}`
   }
 
   private writeFile(filePath: string, content: string): void {
+    const startTime = Date.now()
     const dir = dirname(filePath)
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true })
     }
     writeFileSync(filePath, content, 'utf-8')
+    log.debug('File written', { path: filePath, size: content.length, duration: `${Date.now() - startTime}ms` })
   }
 }

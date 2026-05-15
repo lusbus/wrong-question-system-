@@ -12,6 +12,13 @@ CREATE TABLE IF NOT EXISTS wrong_questions (
   similar_questions TEXT DEFAULT '[]',
   status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'mastered')),
   source TEXT,
+  structure_analysis TEXT DEFAULT NULL,
+  error_cause_type TEXT DEFAULT NULL,
+  error_cause_detail TEXT DEFAULT NULL,
+  option_analysis TEXT DEFAULT NULL,
+  avoid_pitfall_mantra TEXT DEFAULT NULL,
+  similar_question_ids TEXT DEFAULT NULL,
+  self_check_action TEXT DEFAULT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

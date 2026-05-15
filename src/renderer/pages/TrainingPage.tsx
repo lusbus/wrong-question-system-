@@ -5,7 +5,7 @@ import { api } from '../services/api'
 import { SimilarQuestion } from '../../shared/types'
 
 const TrainingPage: React.FC = () => {
-  const { questions, fetchQuestions } = useQuestionStore()
+  const { questions } = useQuestionStore()
   const [selectedType, setSelectedType] = useState<string>()
   const [similarQuestions, setSimilarQuestions] = useState<SimilarQuestion[]>([])
   const [loading, setLoading] = useState(false)

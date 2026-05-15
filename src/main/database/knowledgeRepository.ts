@@ -1,40 +1,51 @@
-import { getDatabase } from './connection'
+import { getDatabase, saveDatabase } from './connection'
 import { KnowledgePoint } from '../../shared/types'
 
 export const knowledgeRepository = {
-  create(kp: Omit<KnowledgePoint, 'id' | 'createdAt'>): number {
-    const db = getDatabase()
-    const stmt = db.prepare(`
+  async create(kp: Omit<KnowledgePoint, 'id' | 'createdAt'>): Promise<number> {
+    const db = await getDatabase()
+    
+    db.run(`
       INSERT OR IGNORE INTO knowledge_points (name, subject, category, parent_id, description)
       VALUES (?, ?, ?, ?, ?)
-    `)
+    `, [kp.name, kp.subject, kp.category, kp.parentId || null, kp.description])
     
-    const result = stmt.run(kp.name, kp.subject, kp.category, kp.parentId || null, kp.description)
-    return result.lastInsertRowid as number
+    saveDatabase()
+    
+    const result = db.exec('SELECT last_insert_rowid() as id')
+    return result[0]?.values[0]?.[0] as number
   },
 
-  findAll(): KnowledgePoint[] {
-    const db = getDatabase()
-    const rows = db.prepare('SELECT * FROM knowledge_points ORDER BY category, name').all() as any[]
-    return rows.map(parseKnowledgePoint)
+  async findAll(): Promise<KnowledgePoint[]> {
+    const db = await getDatabase()
+    const result = db.exec('SELECT * FROM knowledge_points ORDER BY category, name')
+    return result.length > 0 ? result[0].values.map(parseKnowledgePointValues) : []
   },
 
-  findBySubject(subject: string): KnowledgePoint[] {
-    const db = getDatabase()
-    const rows = db.prepare(
-      'SELECT * FROM knowledge_points WHERE subject = ? ORDER BY category, name'
-    ).all(subject) as any[]
-    return rows.map(parseKnowledgePoint)
+  async findBySubject(subject: string): Promise<KnowledgePoint[]> {
+    const db = await getDatabase()
+    const result = db.exec(
+      'SELECT * FROM knowledge_points WHERE subject = ? ORDER BY category, name',
+      [subject]
+    )
+    return result.length > 0 ? result[0].values.map(parseKnowledgePointValues) : []
   },
 
-  findByName(name: string): KnowledgePoint | null {
-    const db = getDatabase()
-    const row = db.prepare('SELECT * FROM knowledge_points WHERE name = ?').get(name) as any
-    return row ? parseKnowledgePoint(row) : null
+  async findByName(name: string): Promise<KnowledgePoint | null> {
+    const db = await getDatabase()
+    const result = db.exec('SELECT * FROM knowledge_points WHERE name = ?', [name])
+    return result.length > 0 ? parseKnowledgePointValues(result[0].values[0]) : null
   }
 }
 
-function parseKnowledgePoint(row: any): KnowledgePoint {
+const KP_COLUMNS = ['id', 'name', 'subject', 'category', 'parent_id', 'description', 'created_at']
+
+function parseKnowledgePointValues(values: any[]): KnowledgePoint {
+  const row: Record<string, any> = {}
+  KP_COLUMNS.forEach((name, i) => {
+    row[name] = values[i]
+  })
+  
   return {
     id: row.id,
     name: row.name,

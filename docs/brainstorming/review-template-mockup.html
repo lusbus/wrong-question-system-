@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公考错题助手 - 错题复盘模板优化方案</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            background: #f0f2f5;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { 
+            text-align: center; 
+            color: #1890ff; 
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .comparison { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .panel.current { border-left: 4px solid #ff4d4f; }
+        .panel.optimized { border-left: 4px solid #52c41a; }
+        .panel h2 { 
+            font-size: 20px; 
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel.current h2 { color: #ff4d4f; }
+        .panel.optimized h2 { color: #52c41a; }
+        .step {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .step h3 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .step p {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge.missing { background: #fff2f0; color: #ff4d4f; }
+        .badge.new { background: #f6ffed; color: #52c41a; }
+        .badge.improved { background: #e6f7ff; color: #1890ff; }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        .feature-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-top: 3px solid #1890ff;
+        }
+        .feature-card h3 {
+            color: #1890ff;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .feature-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-card li {
+            padding: 6px 0;
+            font-size: 13px;
+            color: #555;
+            line-height: 1.6;
+        }
+        .feature-card li:before {
+            content: "✓ ";
+            color: #52c41a;
+            font-weight: bold;
+        }
+        .flow-diagram {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-top: 24px;
+        }
+        .flow-diagram h2 {
+            color: #1890ff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .flow-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .flow-step {
+            background: #f0f9ff;
+            border: 2px solid #91d5ff;
+            border-radius: 8px;
+            padding: 12px 16px;
+            text-align: center;
+            flex: 1;
+            min-width: 140px;
+        }
+        .flow-step .num {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #1890ff;
+            color: white;
+            border-radius: 50%;
+            line-height: 24px;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .flow-step p {
+            font-size: 13px;
+            color: #333;
+            line-height: 1.4;
+        }
+        .arrow {
+            font-size: 20px;
+            color: #1890ff;
+        }
+        @media (max-width: 768px) {
+            .comparison { grid-template-columns: 1fr; }
+            .flow-steps { flex-direction: column; }
+            .arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 公考错题助手 - 错题复盘模板优化方案</h1>
+        
+        <div class="comparison">
+            <div class="panel current">
+                <h2> 当前系统</h2>
+                <div class="step">
+                    <h3>1. 录入错题</h3>
+                    <p>用户粘贴题目内容 + 输入自己的答案</p>
+                </div>
+                <div class="step">
+                    <h3>2. AI 分析</h3>
+                    <p>AI 生成错误类型、错误分析、正确答案、核心知识点</p>
+                    <span class="badge missing">缺少拆结构分析</span>
+                    <span class="badge missing">缺少错因分类</span>
+                </div>
+                <div class="step">
+                    <h3>3. 纠错机制</h3>
+                    <p>用户可输入正确答案，AI 重新分析</p>
+                </div>
+                <div class="step">
+                    <h3>4. 保存结果</h3>
+                    <p>保存到数据库 + 生成 Markdown 错题本</p>
+                </div>
+                <div style="margin-top: 16px; padding: 12px; background: #fff2f0; border-radius: 6px; font-size: 13px; color: #ff4d4f;">
+                     问题：分析结果偏简单，没有结构化的复盘流程，用户难以深度理解错题
+                </div>
+            </div>
+            
+            <div class="panel optimized">
+                <h2>🟢 优化后系统</h2>
+                <div class="step">
+                    <h3>1. 录入错题</h3>
+                    <p>用户粘贴题目内容 + 输入自己的答案 + <strong>输入正确答案</strong></p>
+                    <span class="badge new">新增：正确答案输入</span>
+                </div>
+                <div class="step">
+                    <h3>2. AI 结构化分析</h3>
+                    <p>AI 生成五步复盘结果：</p>
+                    <ul style="font-size: 12px; color: #666; margin: 8px 0 0 16px; line-height: 1.8;">
+                        <li>拆结构（层次/作用/重心句）</li>
+                        <li>分析错因（8种错因类型分类）</li>
+                        <li>对比选项（逐项分析对错原因）</li>
+                        <li>提炼避坑口诀</li>
+                        <li>同类题标记</li>
+                    </ul>
+                    <span class="badge new">新增：结构化复盘</span>
+                </div>
+                <div class="step">
+                    <h3>3. 用户交互</h3>
+                    <p>用户可确认、纠错、或要求 AI 重新分析</p>
+                </div>
+                <div class="step">
+                    <h3>4. 保存 + 生成错题复盘卡</h3>
+                    <p>保存到数据库 + 生成结构化 Markdown 复盘卡</p>
+                    <span class="badge improved">改进：Markdown 模板升级</span>
+                </div>
+                <div style="margin-top: 16px; padding: 12px; background: #f6ffed; border-radius: 6px; font-size: 13px; color: #52c41a;">
+                    ✅ 优势：结构化复盘流程，帮助用户深度理解错题，提炼避坑口诀
+                </div>
+            </div>
+        </div>
+        
+        <div class="flow-diagram">
+            <h2>🔄 优化后的完整流程</h2>
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="num">1</div>
+                    <p>录入题目<br>+ 你的答案<br>+ 正确答案</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="flow-step">
+                    <div class="num">2</div>
+                    <p>AI 五步复盘<br>拆结构/错因/选项<br>口诀/同类题</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="flow-step">
+                    <div class="num">3</div>
+                    <p>用户确认<br>或纠错<br>或重新分析</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="flow-step">
+                    <div class="num">4</div>
+                    <p>保存复盘卡<br>生成 Markdown<br>更新错题本</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="flow-step">
+                    <div class="num">5</div>
+                    <p>定期回顾<br>复习避坑口诀<br>标记同类题</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <h3>📊 拆结构分析</h3>
+                <ul>
+                    <li>将原文拆分成多个层次</li>
+                    <li>标注每层的作用（铺垫/过渡/重心）</li>
+                    <li>提供判断重心句的三种方法</li>
+                    <li>帮助用户理解文段逻辑结构</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>🎯 错因分类系统</h3>
+                <ul>
+                    <li>8种标准错因类型供选择</li>
+                    <li>把背景当主旨 / 以偏概全 / 无中生有</li>
+                    <li>过度推断 / 偷换概念 / 只看表面</li>
+                    <li>转折没抓住 / 其他自定义错因</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>📝 选项对比表</h3>
+                <ul>
+                    <li>逐项分析每个选项</li>
+                    <li>说明为什么对 / 为什么错</li>
+                    <li>使用标准排除术语</li>
+                    <li>帮助用户建立系统排除法</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>💡 避坑口诀</h3>
+                <ul>
+                    <li>用一句话总结这道题的教训</li>
+                    <li>以后做题能快速想起来</li>
+                    <li>积累个人专属避坑指南</li>
+                    <li>定期复习加深记忆</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>🔗 同类题标记</h3>
+                <ul>
+                    <li>标记这道题和之前哪道题一样</li>
+                    <li>记录自查动作</li>
+                    <li>建立错题关联网络</li>
+                    <li>避免重复犯同样的错误</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>📈 错题统计分析</h3>
+                <ul>
+                    <li>按错因类型统计</li>
+                    <li>按题型分布统计</li>
+                    <li>识别高频错误模式</li>
+                    <li>生成个性化学习建议</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

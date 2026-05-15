@@ -12,6 +12,13 @@ export interface WrongQuestion {
   similarQuestions: SimilarQuestion[]
   status: 'pending' | 'mastered'
   source: string
+  structureAnalysis?: string
+  errorCauseType?: string
+  errorCauseDetail?: string
+  optionAnalysis?: string
+  avoidPitfallMantra?: string
+  similarQuestionIds?: string
+  selfCheckAction?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -76,3 +83,14 @@ export interface QuestionStats {
   byType: Record<string, number>
   weakPoints: string[]
 }
+
+export const ERROR_CAUSE_TYPES = [
+  '把背景当主旨',
+  '以偏概全',
+  '无中生有',
+  '过度推断',
+  '偷换概念',
+  '只看表面',
+  '转折/递进没抓住',
+  '其他'
+] as const

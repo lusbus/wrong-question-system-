@@ -13,14 +13,33 @@ export default defineConfig({
         vite: {
           build: {
             outDir: 'dist/main',
+            lib: {
+              entry: 'src/main/index.ts',
+              formats: ['cjs']
+            },
             rollupOptions: {
-              external: ['better-sqlite3', 'openai']
+              external: ['sql.js', 'electron']
             }
+          }
+        }
+      },
+      {
+        entry: 'src/main/preload.ts',
+        onstart(args) {
+          args.reload()
+        },
+        vite: {
+          build: {
+            outDir: 'dist/main'
           }
         }
       }
     ]),
-    renderer()
+    renderer({
+      resolve: {
+        'sql.js': { type: 'cjs' }
+      }
+    })
   ],
   resolve: {
     alias: {
