@@ -76,15 +76,21 @@ npm run dev
 npm run build
 ```
 
-构建完成后，安装包位于 `dist-release/` 目录。
-
-## 下载
+## 下载与安装
 
 ### Windows 安装包
 
-- **公考错题助手 Setup 1.0.0.exe** (~87MB)
-- 支持 Windows 10/11 (x64)
-- 下载地址：[Releases](https://github.com/lusbus/wrong-question-system-/releases)
+- **文件名**：公考错题助手 Setup 1.0.0.exe
+- **大小**：约 87MB
+- **系统**：Windows 10/11 (x64)
+- **下载地址**：[dist-release/公考错题助手 Setup 1.0.0.exe](./dist-release/公考错题助手%20Setup%201.0.0.exe)
+
+### 安装步骤
+
+1. 下载 exe 安装包
+2. 双击运行安装程序
+3. 选择安装路径
+4. 完成安装后即可使用
 
 ## 使用指南
 
