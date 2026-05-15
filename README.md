@@ -76,7 +76,15 @@ npm run dev
 npm run build
 ```
 
-构建完成后，安装包位于 `release/` 目录。
+构建完成后，安装包位于 `dist-release/` 目录。
+
+## 下载
+
+### Windows 安装包
+
+- **公考错题助手 Setup 1.0.0.exe** (~87MB)
+- 支持 Windows 10/11 (x64)
+- 下载地址：[Releases](https://github.com/lusbus/wrong-question-system-/releases)
 
 ## 使用指南
 
